@@ -15,7 +15,7 @@ impl fmt::Display for LionessError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::LionessError::*;
         match *self {
-            BlockSizeError => write!(f, self.description()),
+            BlockSizeError => write!(f, "Lioness block size must exceed 32 bytes."),
         }
     }
 }
@@ -29,7 +29,7 @@ impl Error for LionessError {
     fn cause(&self) -> Option<&Error> {
         use self::LionessError::*;
         match *self {
-            BlockSizeError(ref err) => None,
+            BlockSizeError => None,
         }
     }
 }

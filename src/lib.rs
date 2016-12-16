@@ -10,8 +10,8 @@ extern crate crypto;
 #[macro_use]
 extern crate arrayref;
 
-
-pub use self::error::LionessError;
+pub mod error;
+pub use error::LionessError;
 
 use crypto::digest::Digest;
 use crypto::blake2b::Blake2b;
