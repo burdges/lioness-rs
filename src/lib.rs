@@ -102,8 +102,8 @@ impl<H,SC> Lioness<H,SC>
 {
     fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DigestResultSize == StreamCipherKeySize);
-        let mut hr: [u8; DigestResultSize];
-        let mut k: [u8; StreamCipherKeySize];
+        let mut hr = [0u8; DigestResultSize];
+        let mut k = [0u8; StreamCipherKeySize];
         let keylen = std::mem::size_of_val(&k);
         assert!(keylen == 32);
 
@@ -113,8 +113,9 @@ impl<H,SC> Lioness<H,SC>
             return Err(LionessError::BlockSizeError)
         }
 
-        let mut left; let mut right;
-        (left,right) = block.split_at_mut(keylen);
+        let blocky = block.split_at_mut(keylen);
+        let mut left = blocky.0; 
+        let mut right = blocky.1;
 
         // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
@@ -138,7 +139,7 @@ impl<H,SC> Lioness<H,SC>
         sc.process(tmp_right.as_slice(), right);
 
         // L = L ^ H(K4, R)
-        let mut h = H::new_digestlioness(&self.k2);
+        let mut h = H::new_digestlioness(&self.k4);
         h.input(tmp_right.as_slice());
         h.result(&mut hr);
         xor_assign(left,&hr);
@@ -147,8 +148,48 @@ impl<H,SC> Lioness<H,SC>
     }
 
     fn decrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
+        debug_assert!(DigestResultSize == StreamCipherKeySize);
+        let mut hr = [0u8; DigestResultSize];
+        let mut k = [0u8; StreamCipherKeySize];
+        let keylen = std::mem::size_of_val(&k);
+        assert!(keylen == 32);
 
-// ...
+        let blocklen = block.len();
+        // assert!(len > keylen);
+	if blocklen <= keylen {
+            return Err(LionessError::BlockSizeError)
+        }
+
+        let blocky = block.split_at_mut(keylen);
+        let mut left = blocky.0; 
+        let mut right = blocky.1;
+
+        // rust-crypto cannot xor a stream cipher in place sadly.
+        let mut tmp_right = Vec::with_capacity(blocklen-keylen);
+        // for _ in (0..blocklen-keylen) { tmp.push(0u8); }
+        unsafe { tmp_right.set_len(blocklen-keylen); }
+
+        // L = L ^ H(K4, R)
+        let mut h = H::new_digestlioness(&self.k4);
+        h.input(tmp_right.as_slice());
+        h.result(&mut hr);
+        xor_assign(left,&hr);
+
+        // R = R ^ S(L ^ K3)
+        xor(left, &self.k3, &mut k);
+        let mut sc = SC::new_streamcipherlioness(&k);
+        sc.process(tmp_right.as_slice(), right);
+
+        // L = L ^ H(K2, R)
+        let mut h = H::new_digestlioness(&self.k2);
+        h.input(tmp_right.as_slice());
+        h.result(&mut hr);
+        xor_assign(left,&hr);
+
+        // R = R ^ S(L ^ K1)
+        xor(left, &self.k1, &mut k);
+        let mut sc = SC::new_streamcipherlioness(&k);
+        sc.process(right, tmp_right.as_mut_slice());
 
         Ok(())
     }
