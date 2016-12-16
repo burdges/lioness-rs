@@ -3,15 +3,14 @@
 //! Lioness wide block cipher
 
 
-#![feature(associated_consts)]
+// Associated constant do not work even in nightly yet.
+// #![feature(associated_consts)]
 
-extern crate crypto;
 
 #[macro_use]
 extern crate arrayref;
 
-pub mod error;
-pub use error::LionessError;
+extern crate crypto;
 
 use crypto::digest::Digest;
 use crypto::blake2b::Blake2b;
@@ -21,29 +20,11 @@ use crypto::symmetriccipher::SynchronousStreamCipher;
 use crypto::chacha20::ChaCha20;
 
 
-/// Simple slice xor function modified from:
-/// https://github.com/DaGenix/rust-crypto/blob/master/src/scrypt.rs
-fn xor(x: &[u8], y: &[u8], output: &mut [u8]) {
-    assert!( x.len() == y.len() && x.len() == output.len() );
-    for ((out, &x_i), &y_i) in output.iter_mut().zip(x.iter()).zip(y.iter()) {
-        *out = x_i ^ y_i;
-    }
-}
+pub mod error;
+pub use error::LionessError;
 
-fn xor_assign(a: &mut [u8], b: &[u8]) {
-    assert!( a.len() == b.len() );
-    for (a_i, &b_i) in a.iter_mut().zip(b.iter()) {
-        *a_i ^= b_i;
-    }
-}
-
-
-/*
-pub trait LionessCipher {
-    type DigestT;
-    type StreamCipherT;
-}
-*/
+mod util;
+use util::{xor, xor_assign};
 
 
 pub const DigestResultSize: usize = 32;
@@ -70,8 +51,8 @@ impl DigestLioness for Sha3 {
 
 const StreamCipherKeySize: usize = 32;
 
-/// Add associated type missing from rust-crypto lacks's trait
-/// `crypto::symmetriccipher::SynchronousStreamCipher`
+/// Adapt a given `crypto::symmetriccipher::SynchronousStreamCipher`
+/// to lioness.
 pub trait StreamCipherLioness: SynchronousStreamCipher {
     fn new_streamcipherlioness(k: &[u8]) -> Self;
 }
@@ -194,12 +175,17 @@ impl<H,SC> Lioness<H,SC>
         Ok(())
     }
 
-/*
-    pub fn new_(key: &[u8; 32]) -> Lioness<H,S> {
-        Ok(Lioness<H,S> {
-        })
+    fn new_raw(key: &[u8; 2*StreamCipherKeySize + 2*DigestKeySize]) -> Lioness<H,SC> {
+        let (k1,k2,k3,k4) = array_refs![key,StreamCipherKeySize,DigestKeySize,StreamCipherKeySize,DigestKeySize];
+        Lioness {
+            k1: *k1, 
+            k2: *k2, 
+            k3: *k3, 
+            k4: *k4,
+            h: std::marker::PhantomData,
+            sc: std::marker::PhantomData,
+        }
     }
-*/
 }
 
 
