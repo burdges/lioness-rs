@@ -5,6 +5,12 @@ This crate provides the Lioness wide block cipher instantiated with ChaCha20 and
 
 There is documentation with examples at [https://docs.rs/lioness/](https://docs.rs/lioness/)
 
+_read the paper_
+**Two Practical and Provably Secure Block Ciphers: BEAR and LION**
+*by Ross Anderson and Eli Biham*
+
+https://www.cl.cam.ac.uk/~rja14/Papers/bear-lion.pdf
+
 
 ### Installation
 
