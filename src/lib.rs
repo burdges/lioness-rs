@@ -14,7 +14,6 @@ extern crate crypto;
 
 use crypto::digest::Digest;
 use crypto::blake2b::Blake2b;
-use crypto::sha3::Sha3;
 
 use crypto::symmetriccipher::SynchronousStreamCipher;
 use crypto::chacha20::ChaCha20;
@@ -41,14 +40,6 @@ impl DigestLioness for Blake2b {
         Blake2b::new_keyed(DIGEST_RESULT_SIZE,k)
     }
 }
-
-/*
-impl DigestLioness for Sha3 {
-    const ResultSize: usize = 32;
-    const KeySize: usize = 64;
-    // Sha3::sha3_256
-}
-*/
 
 
 /// Adapt a given `crypto::symmetriccipher::SynchronousStreamCipher`
