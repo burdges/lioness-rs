@@ -27,8 +27,9 @@ mod util;
 use util::{xor, xor_assign};
 
 
-pub const DigestResultSize: usize = 32;
-pub const DigestKeySize: usize = 64;
+pub const DIGEST_RESULT_SIZE: usize = 32;
+pub const DIGEST_KEY_SIZE: usize = 64;
+const STREAM_CIPHER_KEY_SIZE: usize = 32;
 
 /// Adapt a given `crypto::digest::Digest` to Lioness.
 pub trait DigestLioness: Digest {
@@ -37,7 +38,7 @@ pub trait DigestLioness: Digest {
 
 impl DigestLioness for Blake2b {
     fn new_digestlioness(k: &[u8]) -> Self {
-        Blake2b::new_keyed(DigestResultSize,k)
+        Blake2b::new_keyed(DIGEST_RESULT_SIZE,k)
     }
 }
 
@@ -49,7 +50,6 @@ impl DigestLioness for Sha3 {
 }
 */
 
-const StreamCipherKeySize: usize = 32;
 
 /// Adapt a given `crypto::symmetriccipher::SynchronousStreamCipher`
 /// to lioness.
@@ -68,10 +68,10 @@ impl StreamCipherLioness for ChaCha20 {
 pub struct Lioness<H,SC>
   where H: DigestLioness+Digest, 
         SC: StreamCipherLioness+SynchronousStreamCipher {
-    k1: [u8; StreamCipherKeySize],
-    k2: [u8; DigestKeySize],
-    k3: [u8; StreamCipherKeySize],
-    k4: [u8; DigestKeySize],
+    k1: [u8; STREAM_CIPHER_KEY_SIZE],
+    k2: [u8; DIGEST_KEY_SIZE],
+    k3: [u8; STREAM_CIPHER_KEY_SIZE],
+    k4: [u8; DIGEST_KEY_SIZE],
     // I dislike these as H and SC should not impact variance.
     h: std::marker::PhantomData<H>,
     sc: std::marker::PhantomData<SC>,
@@ -82,9 +82,9 @@ impl<H,SC> Lioness<H,SC>
         SC: StreamCipherLioness+SynchronousStreamCipher
 {
     fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
-        debug_assert!(DigestResultSize == StreamCipherKeySize);
-        let mut hr = [0u8; DigestResultSize];
-        let mut k = [0u8; StreamCipherKeySize];
+        debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
+        let mut hr = [0u8; DIGEST_RESULT_SIZE];
+        let mut k = [0u8; STREAM_CIPHER_KEY_SIZE];
         let keylen = std::mem::size_of_val(&k);
         assert!(keylen == 32);
 
@@ -129,9 +129,9 @@ impl<H,SC> Lioness<H,SC>
     }
 
     fn decrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
-        debug_assert!(DigestResultSize == StreamCipherKeySize);
-        let mut hr = [0u8; DigestResultSize];
-        let mut k = [0u8; StreamCipherKeySize];
+        debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
+        let mut hr = [0u8; DIGEST_RESULT_SIZE];
+        let mut k = [0u8; STREAM_CIPHER_KEY_SIZE];
         let keylen = std::mem::size_of_val(&k);
         assert!(keylen == 32);
 
@@ -175,8 +175,8 @@ impl<H,SC> Lioness<H,SC>
         Ok(())
     }
 
-    fn new_raw(key: &[u8; 2*StreamCipherKeySize + 2*DigestKeySize]) -> Lioness<H,SC> {
-        let (k1,k2,k3,k4) = array_refs![key,StreamCipherKeySize,DigestKeySize,StreamCipherKeySize,DigestKeySize];
+    fn new_raw(key: &[u8; 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE]) -> Lioness<H,SC> {
+        let (k1,k2,k3,k4) = array_refs![key,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE];
         Lioness {
             k1: *k1, 
             k2: *k2, 
