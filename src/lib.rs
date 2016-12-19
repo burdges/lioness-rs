@@ -2,29 +2,19 @@
 
 //! Lioness wide block cipher
 
-
-// Associated constant do not work even in nightly yet.
-// #![feature(associated_consts)]
-
-
 #[macro_use]
 extern crate arrayref;
-
 extern crate crypto;
 
 use crypto::digest::Digest;
 use crypto::blake2b::Blake2b;
-
 use crypto::symmetriccipher::SynchronousStreamCipher;
 use crypto::chacha20::ChaCha20;
 
-
 pub mod error;
 pub use error::LionessError;
-
 mod util;
 use util::{xor, xor_assign};
-
 
 pub const DIGEST_RESULT_SIZE: usize = 32;
 pub const DIGEST_KEY_SIZE: usize = 64;
@@ -180,8 +170,6 @@ impl<H,SC> Lioness<H,SC>
 }
 
 
-
- 
 
 #[cfg(test)]
 mod tests {
