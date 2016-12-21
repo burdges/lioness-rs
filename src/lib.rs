@@ -76,33 +76,34 @@ impl<H,SC> Lioness<H,SC>
         }
 
         let blocky = block.split_at_mut(keylen);
-        let mut left = blocky.0; 
-        let mut right = blocky.1;
+        let left: &mut [u8] = blocky.0; 
+        let right: &mut [u8] = blocky.1;
 
         // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
-        // for _ in (0..blocklen-keylen) { tmp.push(0u8); }
-        unsafe { tmp_right.set_len(blocklen-keylen); }
+        for _ in (0..blocklen-keylen) { tmp_right.push(0u8); }
+        // unsafe { tmp_right.set_len(blocklen-keylen); }
+        debug_assert_eq!(tmp_right.len(),right.len());
 
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(right, tmp_right.as_mut_slice());
+        sc.process(right, &mut tmp_right); // .as_mut_slice()
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digestlioness(&self.k2);
-        h.input(tmp_right.as_slice());
+        h.input(&tmp_right);  // .as_slice()
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(tmp_right.as_slice(), right);
+        sc.process(&tmp_right, right);  // .as_slice()
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digestlioness(&self.k4);
-        h.input(tmp_right.as_slice());
+        h.input(&right);  // .as_slice()
         h.result(&mut hr);
         xor_assign(left,&hr);
 
@@ -123,8 +124,8 @@ impl<H,SC> Lioness<H,SC>
         }
 
         let blocky = block.split_at_mut(keylen);
-        let mut left = blocky.0; 
-        let mut right = blocky.1;
+        let left: &mut [u8] = blocky.0; 
+        let right: &mut [u8] = blocky.1;
 
         // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
@@ -133,25 +134,25 @@ impl<H,SC> Lioness<H,SC>
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digestlioness(&self.k4);
-        h.input(tmp_right.as_slice());
+        h.input(&right);  // .as_slice()
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(tmp_right.as_slice(), right);
+        sc.process(right, &mut tmp_right);  // .as_slice()
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digestlioness(&self.k2);
-        h.input(tmp_right.as_slice());
+        h.input(&tmp_right);  // .as_slice()
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(right, tmp_right.as_mut_slice());
+        sc.process(&tmp_right, right);  // .as_mut_slice()
 
         Ok(())
     }
@@ -176,18 +177,31 @@ impl<H,SC> Lioness<H,SC>
 mod tests {
 use super::*;
 
+extern crate rand;
+use self::rand::Rng;
+use self::rand::os::OsRng;
+
 const test_plaintext: &'static [u8] = b"Hello there world, I'm just a test string";
+
+const RAW_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE;
+type RawKey = [u8; RAW_KEY_SIZE];
+// const ZeroRawKey: &'static [u8] = &[0u8; RawKeySize];
 
 #[test]
 fn it_works() {
-    let key = [0u8; 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE];
-    let l = Lioness::<Blake2b,ChaCha20>::new_raw(&key);
+    let mut rnd = OsRng::new().unwrap();
+    let key = rnd.gen_iter::<u8>().take(RAW_KEY_SIZE).collect::<Vec<u8>>();
+    let l = Lioness::<Blake2b,ChaCha20>::new_raw(array_ref!(key,0,RAW_KEY_SIZE));
     let mut v: Vec<u8> = test_plaintext.to_owned();
-    assert_eq!(v.as_mut_slice(),test_plaintext);
-    l.encrypt(v.as_mut_slice());
-    assert_ne!(v.as_mut_slice(),test_plaintext);
-    l.decrypt(v.as_mut_slice());
-    assert_eq!(v.as_mut_slice(),test_plaintext);
+    assert_eq!(v,test_plaintext);
+    l.encrypt(&mut v).unwrap();  // .as_mut_slice()
+    assert_eq!(v.len(),test_plaintext.len());
+    // assert_ne!(v,test_plaintext);
+    // assert!( v.iter.zip(test_plaintext.iter()).all(|(x,y)| x!=y) );
+    l.decrypt(&mut v).unwrap();  // .as_mut_slice()
+    assert_eq!(v.len(),test_plaintext.len());
+    assert_eq!(v[0..32],test_plaintext[0..32]);
+    assert_eq!(v[32..],test_plaintext[32..]);
 }
 
 } // mod tests
