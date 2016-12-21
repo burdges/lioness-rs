@@ -169,11 +169,26 @@ impl<H,SC> Lioness<H,SC>
     }
 }
 
+// pub type LionessDefault = Lioness<Blake2b,ChaCha20>;
 
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn it_works() {
-    }
+use super::*;
+
+const test_plaintext: &'static [u8] = b"Hello there world, I'm just a test string";
+
+#[test]
+fn it_works() {
+    let key = [0u8; 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE];
+    let l = Lioness::<Blake2b,ChaCha20>::new_raw(&key);
+    let mut v: Vec<u8> = test_plaintext.to_owned();
+    assert_eq!(v.as_mut_slice(),test_plaintext);
+    l.encrypt(v.as_mut_slice());
+    assert_ne!(v.as_mut_slice(),test_plaintext);
+    l.decrypt(v.as_mut_slice());
+    assert_eq!(v.as_mut_slice(),test_plaintext);
 }
+
+} // mod tests
+
