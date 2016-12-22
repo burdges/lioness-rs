@@ -13,8 +13,8 @@ use crypto::chacha20::ChaCha20;
 
 pub mod error;
 pub use error::LionessError;
-mod util;
-use util::{xor, xor_assign};
+pub mod util;
+pub use util::{xor, xor_assign};
 
 pub const DIGEST_RESULT_SIZE: usize = 32;
 pub const DIGEST_KEY_SIZE: usize = 64;
@@ -189,6 +189,7 @@ mod tests {
         let mut rnd = OsRng::new().unwrap();
         let key = rnd.gen_iter::<u8>().take(RAW_KEY_SIZE).collect::<Vec<u8>>();
         let l = Lioness::<Blake2b,ChaCha20>::new_raw(array_ref!(key,0,RAW_KEY_SIZE));
+        //let l = LionessDefault::new_raw(array_ref!(key,0,RAW_KEY_SIZE));
         let mut v: Vec<u8> = TEST_PLAINTEXT.to_owned();
         assert_eq!(v,TEST_PLAINTEXT);
         l.encrypt(&mut v).unwrap();
@@ -201,4 +202,3 @@ mod tests {
     }
 
 } // tests
-
