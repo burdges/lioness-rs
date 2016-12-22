@@ -18,7 +18,8 @@ use util::{xor, xor_assign};
 
 pub const DIGEST_RESULT_SIZE: usize = 32;
 pub const DIGEST_KEY_SIZE: usize = 64;
-const STREAM_CIPHER_KEY_SIZE: usize = 32;
+pub const STREAM_CIPHER_KEY_SIZE: usize = 32;
+pub const RAW_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE;
 
 /// Adapt a given `crypto::digest::Digest` to Lioness.
 pub trait DigestLioness: Digest {
@@ -46,6 +47,7 @@ impl StreamCipherLioness for ChaCha20 {
 
 
 /// Lioness implemented generically over a Digest and StreamCipher
+#[allow(dead_code)]
 pub struct Lioness<H,SC>
   where H: DigestLioness+Digest, 
         SC: StreamCipherLioness+SynchronousStreamCipher {
@@ -58,6 +60,7 @@ pub struct Lioness<H,SC>
     sc: std::marker::PhantomData<SC>,
 }
 
+#[allow(dead_code)]
 impl<H,SC> Lioness<H,SC>
   where H: DigestLioness+Digest,
         SC: StreamCipherLioness+SynchronousStreamCipher
@@ -70,7 +73,6 @@ impl<H,SC> Lioness<H,SC>
         assert!(keylen == 32);
 
         let blocklen = block.len();
-        // assert!(len > keylen);
 	if blocklen <= keylen {
             return Err(LionessError::BlockSizeError)
         }
@@ -81,7 +83,7 @@ impl<H,SC> Lioness<H,SC>
 
         // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
-        for _ in (0..blocklen-keylen) { tmp_right.push(0u8); }
+        for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
         // unsafe { tmp_right.set_len(blocklen-keylen); }
         debug_assert_eq!(tmp_right.len(),right.len());
 
@@ -118,7 +120,6 @@ impl<H,SC> Lioness<H,SC>
         assert!(keylen == 32);
 
         let blocklen = block.len();
-        // assert!(len > keylen);
 	if blocklen <= keylen {
             return Err(LionessError::BlockSizeError)
         }
@@ -175,34 +176,29 @@ impl<H,SC> Lioness<H,SC>
 
 #[cfg(test)]
 mod tests {
-use super::*;
+    use super::*;
+    extern crate rand;
+    use crypto::blake2b::Blake2b;
+    use crypto::chacha20::ChaCha20;
+    use self::rand::Rng;
+    use self::rand::os::OsRng;
 
-extern crate rand;
-use self::rand::Rng;
-use self::rand::os::OsRng;
+    #[test]
+    fn simple_encrypt_decrypt_test() {
+        const TEST_PLAINTEXT: &'static [u8] = b"Hello there world, I'm just a test string";
+        let mut rnd = OsRng::new().unwrap();
+        let key = rnd.gen_iter::<u8>().take(RAW_KEY_SIZE).collect::<Vec<u8>>();
+        let l = Lioness::<Blake2b,ChaCha20>::new_raw(array_ref!(key,0,RAW_KEY_SIZE));
+        let mut v: Vec<u8> = TEST_PLAINTEXT.to_owned();
+        assert_eq!(v,TEST_PLAINTEXT);
+        l.encrypt(&mut v).unwrap();
+        assert_eq!(v.len(),TEST_PLAINTEXT.len());
+        assert_ne!(v,TEST_PLAINTEXT);
+        l.decrypt(&mut v).unwrap();
+        assert_eq!(v.len(),TEST_PLAINTEXT.len());
+        assert_eq!(v[0..32],TEST_PLAINTEXT[0..32]);
+        assert_eq!(v[32..],TEST_PLAINTEXT[32..]);
+    }
 
-const test_plaintext: &'static [u8] = b"Hello there world, I'm just a test string";
-
-const RAW_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE;
-type RawKey = [u8; RAW_KEY_SIZE];
-// const ZeroRawKey: &'static [u8] = &[0u8; RawKeySize];
-
-#[test]
-fn it_works() {
-    let mut rnd = OsRng::new().unwrap();
-    let key = rnd.gen_iter::<u8>().take(RAW_KEY_SIZE).collect::<Vec<u8>>();
-    let l = Lioness::<Blake2b,ChaCha20>::new_raw(array_ref!(key,0,RAW_KEY_SIZE));
-    let mut v: Vec<u8> = test_plaintext.to_owned();
-    assert_eq!(v,test_plaintext);
-    l.encrypt(&mut v).unwrap();  // .as_mut_slice()
-    assert_eq!(v.len(),test_plaintext.len());
-    // assert_ne!(v,test_plaintext);
-    // assert!( v.iter.zip(test_plaintext.iter()).all(|(x,y)| x!=y) );
-    l.decrypt(&mut v).unwrap();  // .as_mut_slice()
-    assert_eq!(v.len(),test_plaintext.len());
-    assert_eq!(v[0..32],test_plaintext[0..32]);
-    assert_eq!(v[32..],test_plaintext[32..]);
-}
-
-} // mod tests
+} // tests
 
