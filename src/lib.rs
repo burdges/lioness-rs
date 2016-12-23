@@ -54,7 +54,6 @@ pub struct Lioness<H,SC>
     _k2: [u8; DIGEST_KEY_SIZE],
     _k3: [u8; STREAM_CIPHER_KEY_SIZE],
     _k4: [u8; DIGEST_KEY_SIZE],
-    // I dislike these as H and SC should not impact variance.
     h: std::marker::PhantomData<H>,
     sc: std::marker::PhantomData<SC>,
 }
@@ -82,7 +81,6 @@ impl<H,SC> Lioness<H,SC>
         // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
         for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
-        // unsafe { tmp_right.set_len(blocklen-keylen); }
         debug_assert_eq!(tmp_right.len(),right.len());
 
         // R = R ^ S(L ^ K1)
@@ -128,8 +126,7 @@ impl<H,SC> Lioness<H,SC>
 
         // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
-        // for _ in (0..blocklen-keylen) { tmp.push(0u8); }
-        unsafe { tmp_right.set_len(blocklen-keylen); }
+        for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digestlioness(&self._k4);
