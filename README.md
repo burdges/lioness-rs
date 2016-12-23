@@ -7,6 +7,8 @@
 
 This crate provides the Lioness wide block cipher instantiated with ChaCha20 and Blake2b.
 
+[![Build status](https://api.travis-ci.org/burdges/lioness-rs.png)](https://travis-ci.org/burdges/lioness-rs)
+[![](https://docs.rs/lioness/badge.svg)](https://docs.rs/lioness/)
 
 ### Documentation
 
