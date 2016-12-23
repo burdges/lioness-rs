@@ -189,11 +189,12 @@ mod tests {
         assert_eq!(v,TEST_PLAINTEXT);
         l.encrypt(&mut v).unwrap();
         assert_eq!(v.len(),TEST_PLAINTEXT.len());
-        assert_ne!(v,TEST_PLAINTEXT);
+        l.decrypt(&mut v).unwrap();
+        assert_eq!(v,TEST_PLAINTEXT);
         l.decrypt(&mut v).unwrap();
         assert_eq!(v.len(),TEST_PLAINTEXT.len());
-        assert_eq!(v[0..32],TEST_PLAINTEXT[0..32]);
-        assert_eq!(v[32..],TEST_PLAINTEXT[32..]);
+        l.encrypt(&mut v).unwrap();
+        assert_eq!(v,TEST_PLAINTEXT);
     }
 
 } // tests
