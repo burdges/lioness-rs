@@ -78,7 +78,6 @@ impl<H,SC> Lioness<H,SC>
         let left: &mut [u8] = blocky.0; 
         let right: &mut [u8] = blocky.1;
 
-        // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
         for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
         debug_assert_eq!(tmp_right.len(),right.len());
@@ -86,22 +85,22 @@ impl<H,SC> Lioness<H,SC>
         // R = R ^ S(L ^ K1)
         xor(left, &self._k1, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(right, &mut tmp_right); // .as_mut_slice()
+        sc.process(right, &mut tmp_right);
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digestlioness(&self._k2);
-        h.input(&tmp_right);  // .as_slice()
+        h.input(&tmp_right);
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
         xor(left, &self._k3, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(&tmp_right, right);  // .as_slice()
+        sc.process(&tmp_right, right);
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digestlioness(&self._k4);
-        h.input(&right);  // .as_slice()
+        h.input(&right);
         h.result(&mut hr);
         xor_assign(left,&hr);
 
@@ -124,31 +123,30 @@ impl<H,SC> Lioness<H,SC>
         let left: &mut [u8] = blocky.0; 
         let right: &mut [u8] = blocky.1;
 
-        // rust-crypto cannot xor a stream cipher in place sadly.
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
         for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digestlioness(&self._k4);
-        h.input(&right);  // .as_slice()
+        h.input(&right);
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
         xor(left, &self._k3, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(right, &mut tmp_right);  // .as_slice()
+        sc.process(right, &mut tmp_right);
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digestlioness(&self._k2);
-        h.input(&tmp_right);  // .as_slice()
+        h.input(&tmp_right);
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K1)
         xor(left, &self._k1, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
-        sc.process(&tmp_right, right);  // .as_mut_slice()
+        sc.process(&tmp_right, right);
 
         Ok(())
     }
