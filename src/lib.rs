@@ -62,6 +62,10 @@ impl<H,SC> Lioness<H,SC>
   where H: DigestLioness+Digest,
         SC: StreamCipherLioness+SynchronousStreamCipher
 {
+    /// encrypt a block
+    /// # Errors
+    ///
+    /// Returns LionessError::BlockSizeError if block size is too small
     pub fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
         let mut hr = [0u8; DIGEST_RESULT_SIZE];
@@ -107,6 +111,10 @@ impl<H,SC> Lioness<H,SC>
         Ok(())
     }
 
+    /// decrypt a block
+    /// # Errors
+    ///
+    /// Returns LionessError::BlockSizeError if block size is too small
     pub fn decrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
         let mut hr = [0u8; DIGEST_RESULT_SIZE];
@@ -151,6 +159,7 @@ impl<H,SC> Lioness<H,SC>
         Ok(())
     }
 
+    /// Given a key, create a new Lioness cipher
     pub fn new_raw(key: &[u8; 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE]) -> Lioness<H,SC> {
         let (k1,k2,k3,k4) = array_refs![key,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE];
         Lioness {
