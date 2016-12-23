@@ -7,7 +7,7 @@ homepage = "https://github.com/burdges/lioness-rs"
 repository = "https://github.com/burdges/lioness-rs.git"
 documentation = "https://docs.rs/lioness/"
 readme = "README.md"
-keywords = ["cryptography","cipher","onion", "lioness", "sphinx", "mixnet"]
+keywords = ["cryptography","cipher","lioness", "sphinx", "mixnet"]
 license = "MIT"
 
 [dependencies]
