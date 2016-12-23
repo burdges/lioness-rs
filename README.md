@@ -1,9 +1,15 @@
+
+[![travis build status](https://travis-ci.org/burdges/lioness-rs?branch=master)](https://www.travis-ci.org/burgdes/lioness-rs)
+[![documenation](https://docs.rs/lioness/badge.svg)](https://docs.rs/lioness/)
+
+
+
 This crate provides the Lioness wide block cipher instantiated with ChaCha20 and Blake2b.
 
 
 ### Documentation
 
-There is documentation with examples at [https://docs.rs/lioness/](https://docs.rs/lioness/)
+api docs here: <https://docs.rs/lioness/>
 
 _read the paper_
 **Two Practical and Provably Secure Block Ciphers: BEAR and LION**
@@ -29,6 +35,3 @@ extern crate liones;
 
 ...
 ```
-
-You might need nightly rust via `./rustup.sh --channel=nightly`.
-
