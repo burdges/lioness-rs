@@ -1,6 +1,7 @@
 
 [![travis build status](https://travis-ci.org/burdges/lioness-rs?branch=master)](https://www.travis-ci.org/burgdes/lioness-rs)
 [![documenation](https://docs.rs/lioness/badge.svg)](https://docs.rs/lioness/)
+[![crates.io link](https://img.shields.io/crates/v/lioness.svg)](https://crates.io/crates/lioness)
 
 
 
