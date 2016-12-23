@@ -1,13 +1,9 @@
 
-[![travis build status](https://travis-ci.org/burdges/lioness-rs?branch=master)](https://www.travis-ci.org/burgdes/lioness-rs)
-[![documenation](https://docs.rs/lioness/badge.svg)](https://docs.rs/lioness/)
-
-
-
 This crate provides the Lioness wide block cipher instantiated with ChaCha20 and Blake2b.
 
-[![Build status](https://api.travis-ci.org/burdges/lioness-rs.png)](https://travis-ci.org/burdges/lioness-rs)
-[![](https://docs.rs/lioness/badge.svg)](https://docs.rs/lioness/)
+[![Build status](https://api.travis-ci.org/burdges/lioness-rs.png?branch=master)](https://travis-ci.org/burdges/lioness-rs)
+[![documentation](https://docs.rs/lioness/badge.svg)](https://docs.rs/lioness/)
+
 
 ### Documentation
 
