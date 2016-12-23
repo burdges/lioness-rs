@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn chach20_blake2b_lioness_vectors_test() {
-        let tests = vec![
+        let test_vectors = vec![
             Test {
                 key: "0f2c69732932c99e56fa50fbb2763ad77ee221fc5d9e6c08f89fc577a7467f1ee34003440ee2bfbf\
                       aac60912b0e547fbe9a6a9292db70bc718c6f2773ab198ac8f255378f7ea799e1d4b8596079173b6\
@@ -259,9 +259,8 @@ mod tests {
                          c778ace024d2a40045241e71b023ceb519c8c28285c333b9f90f5e2cde21ca6744e43f89d0054\
                          5dd34df072c7214f6cbd2123c4b0613614609961dd855d6d611c3018e4df3550b4e93f33f7c3e\
                          8b2c890ca0405c957aa277d".from_hex().unwrap(),
-            },
-        ];
+            }];
 
-        test_cipher(&tests[..]);
+        test_cipher(&test_vectors[..]);
     }
 } // tests
