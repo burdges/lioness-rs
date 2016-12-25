@@ -30,7 +30,7 @@ lioness = "^0.1"
 Use the crate like:
 
 ```rust
-extern crate liones;
+extern crate lioness;
 
 ...
 ```
