@@ -6,6 +6,14 @@ This crate provides the Lioness wide block cipher instantiated with ChaCha20 and
 [![crates.io link](https://img.shields.io/crates/v/lioness.svg)](https://crates.io/crates/lioness)
 
 
+### Warning
+
+This code has not been formally audited by a cryptographer. It therefore should not
+be considered safe or correct. Use it at your own risk! (however test vectors are verified using
+other language implementations: rust, golang, python trinity!)
+
+
+
 ### Documentation
 
 api docs here: <https://docs.rs/lioness/>
