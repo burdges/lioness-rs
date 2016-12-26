@@ -42,6 +42,8 @@ pub trait StreamCipherLioness: SynchronousStreamCipher {
 
 impl StreamCipherLioness for ChaCha20 {
     fn new_streamcipherlioness(k: &[u8]) -> ChaCha20 {
+        // here we intentionally initialize the ChaCha20 stream cipher with
+        // an 8 byte zero nonce which is sufficient in the context of Lioness
         ChaCha20::new(k, &[0u8;CHACHA20_NONCE_SIZE])
     }
 }
