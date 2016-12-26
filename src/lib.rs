@@ -20,6 +20,7 @@ pub const DIGEST_RESULT_SIZE: usize = 32;
 pub const DIGEST_KEY_SIZE: usize = 64;
 pub const STREAM_CIPHER_KEY_SIZE: usize = 32;
 pub const RAW_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE;
+const CHACHA20_NONCE_SIZE: usize = 8;
 
 /// Adapt a given `crypto::digest::Digest` to Lioness.
 pub trait DigestLioness: Digest {
@@ -41,7 +42,7 @@ pub trait StreamCipherLioness: SynchronousStreamCipher {
 
 impl StreamCipherLioness for ChaCha20 {
     fn new_streamcipherlioness(k: &[u8]) -> ChaCha20 {
-        ChaCha20::new(k, &[0u8;12])
+        ChaCha20::new(k, &[0u8;CHACHA20_NONCE_SIZE])
     }
 }
 
