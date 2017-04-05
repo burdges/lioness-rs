@@ -63,9 +63,50 @@ impl<H,SC> Lioness<H,SC>
         SC: StreamCipherLioness+SynchronousStreamCipher
 {
     /// encrypt a block
+    ///
+    /// # Arguments
+    ///
+    /// * `block` - a mutable byte slice of data to encrypt
+    ///
     /// # Errors
     ///
-    /// Returns LionessError::BlockSizeError if block size is too small
+    /// * `LionessError::BlockSizeError` - returned if block size is too small
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// extern crate crypto;
+    /// extern crate lioness;
+    /// extern crate rustc_serialize;
+    /// use self::rustc_serialize::hex::FromHex;
+    /// use self::lioness::{Lioness, RAW_KEY_SIZE};
+    /// use crypto::chacha20::ChaCha20;
+    /// use crypto::blake2b::Blake2b;
+    /// # #[macro_use] extern crate arrayref; fn main() {
+    ///
+    /// let key = "e98e0e3f28311995e8448e6dc1de73159e800c8184a7846418347f4490f063e372\
+    /// 6eebda84e02f2cc218bd6c6e9a9b801e8d8899e8f5b6dcd23bf7ca7f11641c584cd9568f045e9\
+    /// ad92c59275f67b9bed7f02bb23e28c0b8e56fbb634d60a6d1eae7145e53a4442dda40ae37b2e2\
+    /// e1f97ae495c8ce0166605d4f1ea91f139159229f208c69362095d8d8e00d7b4c9ca5603dc8b87\
+    /// 50b0eb500670858ca7983a8760be307ff3e5c05f22799cb60d7c57fe3fc8b980aa65e89e3ac0a\
+    /// c147af7deb".from_hex().unwrap();
+    ///
+    /// const PLAINTEXT: &'static [u8] = b"Open, secure and reliable
+    /// connectivity is necessary (although not sufficient) to
+    /// excercise the human rights such as freedom of expression and
+    /// freedom of association [FOC], as defined in the Universal
+    /// Declaration of Human Rights [UDHR]. The purpose of the
+    /// Internet to be a global network of networks that provides
+    /// unfettered connectivity to all users and for any content
+    /// [RFC1958]. This objective of stimulating global connectivity
+    /// contributes to the Internet's role as an enabler of human
+    /// rights.";
+    ///
+    /// let mut block: Vec<u8> = PLAINTEXT.to_owned();
+    /// let cipher = Lioness::<Blake2b,ChaCha20>::new_raw(array_ref!(key, 0, RAW_KEY_SIZE));
+    /// cipher.encrypt(&mut block).unwrap();
+    /// }
+    /// ```
     pub fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
         let mut hr = [0u8; DIGEST_RESULT_SIZE];
@@ -112,9 +153,15 @@ impl<H,SC> Lioness<H,SC>
     }
 
     /// decrypt a block
+    ///
+    /// # Arguments
+    ///
+    /// * `block` - a mutable byte slice of data to decrypt
+    ///
     /// # Errors
     ///
-    /// Returns LionessError::BlockSizeError if block size is too small
+    /// * `LionessError::BlockSizeError` - returned if block size is too small
+    ///
     pub fn decrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
         let mut hr = [0u8; DIGEST_RESULT_SIZE];
