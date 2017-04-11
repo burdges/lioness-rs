@@ -109,9 +109,11 @@ impl<H,SC> Lioness<H,SC>
     /// }
     /// ```
     pub fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
+        debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
         let mut hr = [0u8; DIGEST_RESULT_SIZE];
         let mut k = [0u8; STREAM_CIPHER_KEY_SIZE];
         let keylen = std::mem::size_of_val(&k);
+        debug_assert!(keylen == 32);
 
         let blocklen = block.len();
 	if blocklen <= keylen {
@@ -121,8 +123,10 @@ impl<H,SC> Lioness<H,SC>
         let blocky = block.split_at_mut(keylen);
         let left: &mut [u8] = blocky.0; 
         let right: &mut [u8] = blocky.1;
+
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
         for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
+        debug_assert_eq!(tmp_right.len(),right.len());
 
         // R = R ^ S(L ^ K1)
         xor(left, &self._k1, &mut k);
@@ -160,9 +164,11 @@ impl<H,SC> Lioness<H,SC>
     /// * `LionessError::BlockSizeError` - returned if block size is too small
     ///
     pub fn decrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
+        debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
         let mut hr = [0u8; DIGEST_RESULT_SIZE];
         let mut k = [0u8; STREAM_CIPHER_KEY_SIZE];
         let keylen = std::mem::size_of_val(&k);
+        debug_assert!(keylen == 32);
 
         let blocklen = block.len();
 	if blocklen <= keylen {
@@ -172,6 +178,7 @@ impl<H,SC> Lioness<H,SC>
         let blocky = block.split_at_mut(keylen);
         let left: &mut [u8] = blocky.0; 
         let right: &mut [u8] = blocky.1;
+
         let mut tmp_right = Vec::with_capacity(blocklen-keylen);
         for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
 
