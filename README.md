@@ -11,15 +11,23 @@ This crate provides the Lioness wide block cipher instantiated with ChaCha20 and
 This code has not been formally audited and should only be use with extreme care and advice from competent cryptographers.  That said, Lionness' security properties mostly reduce to the underlying stream cipher and hash function.
 
 
-### Documentation
+### Details
 
-api docs here: <https://docs.rs/lioness/>
+Lioness is a wide block cipher composed using a stream cipher and a keyed hash function.
 
-_read the paper_
+_read the Lioness paper_
 **Two Practical and Provably Secure Block Ciphers: BEAR and LION**
 *by Ross Anderson and Eli Biham*
 
-https://www.cl.cam.ac.uk/~rja14/Papers/bear-lion.pdf
+<https://www.cl.cam.ac.uk/~rja14/Papers/bear-lion.pdf>
+
+
+Our generic Lioness implementation utilizes any stream cipher and
+keyed digest as long as the digest output is equal to the stream
+cipher key size. We've provided a Chacha20 + Blake2b Lioness
+implementation with code samples and verified unit test vectors.
+
+The rust Lioness API docs are here: <https://docs.rs/lioness/>
 
 
 ### Installation
@@ -39,3 +47,8 @@ extern crate lioness;
 
 ...
 ```
+
+### License
+
+Lioness-rs is free software made available via the MIT License.
+License details located in the LICENSE file.
