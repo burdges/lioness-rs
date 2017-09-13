@@ -1,7 +1,7 @@
 
 This crate provides the Lioness wide block cipher instantiated with ChaCha20 and Blake2b.
 
-[![build status](https://api.travis-ci.org/applied-mixnetworks/lioness-rs.png)](https://travis-ci.org/applied-mixnetworks/lioness-rs)
+[![build status](https://api.travis-ci.org/burdges/lioness-rs.png)](https://travis-ci.org/burdges/lioness-rs)
 [![documenation](https://docs.rs/lioness/badge.svg)](https://docs.rs/lioness/)
 [![crates.io link](https://img.shields.io/crates/v/lioness.svg)](https://crates.io/crates/lioness)
 
