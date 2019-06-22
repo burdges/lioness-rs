@@ -53,10 +53,10 @@ impl StreamCipherLioness for ChaCha20 {
 pub struct Lioness<H,SC>
   where H: DigestLioness+Digest, 
         SC: StreamCipherLioness+SynchronousStreamCipher {
-    _k1: [u8; STREAM_CIPHER_KEY_SIZE],
-    _k2: [u8; DIGEST_KEY_SIZE],
-    _k3: [u8; STREAM_CIPHER_KEY_SIZE],
-    _k4: [u8; DIGEST_KEY_SIZE],
+    k1: [u8; STREAM_CIPHER_KEY_SIZE],
+    k2: [u8; DIGEST_KEY_SIZE],
+    k3: [u8; STREAM_CIPHER_KEY_SIZE],
+    k4: [u8; DIGEST_KEY_SIZE],
     h: std::marker::PhantomData<H>,
     sc: std::marker::PhantomData<SC>,
 }
@@ -118,7 +118,7 @@ impl<H,SC> Lioness<H,SC>
         debug_assert!(keylen == 32);
 
         let blocklen = block.len();
-	if blocklen <= keylen {
+        if blocklen <= keylen {
             return Err(LionessError::BlockSizeError)
         }
 
@@ -131,23 +131,23 @@ impl<H,SC> Lioness<H,SC>
         debug_assert_eq!(tmp_right.len(),right.len());
 
         // R = R ^ S(L ^ K1)
-        xor(left, &self._k1, &mut k);
+        xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
         sc.process(right, &mut tmp_right);
 
         // L = L ^ H(K2, R)
-        let mut h = H::new_digestlioness(&self._k2);
+        let mut h = H::new_digestlioness(&self.k2);
         h.input(&tmp_right);
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
-        xor(left, &self._k3, &mut k);
+        xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
         sc.process(&tmp_right, right);
 
         // L = L ^ H(K4, R)
-        let mut h = H::new_digestlioness(&self._k4);
+        let mut h = H::new_digestlioness(&self.k4);
         h.input(&right);
         h.result(&mut hr);
         xor_assign(left,&hr);
@@ -173,7 +173,7 @@ impl<H,SC> Lioness<H,SC>
         debug_assert!(keylen == 32);
 
         let blocklen = block.len();
-	if blocklen <= keylen {
+	    if blocklen <= keylen {
             return Err(LionessError::BlockSizeError)
         }
 
@@ -185,24 +185,24 @@ impl<H,SC> Lioness<H,SC>
         for _ in 0..blocklen-keylen { tmp_right.push(0u8); }
 
         // L = L ^ H(K4, R)
-        let mut h = H::new_digestlioness(&self._k4);
+        let mut h = H::new_digestlioness(&self.k4);
         h.input(&right);
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
-        xor(left, &self._k3, &mut k);
+        xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
         sc.process(right, &mut tmp_right);
 
         // L = L ^ H(K2, R)
-        let mut h = H::new_digestlioness(&self._k2);
+        let mut h = H::new_digestlioness(&self.k2);
         h.input(&tmp_right);
         h.result(&mut hr);
         xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K1)
-        xor(left, &self._k1, &mut k);
+        xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipherlioness(&k);
         sc.process(&tmp_right, right);
 
@@ -211,12 +211,12 @@ impl<H,SC> Lioness<H,SC>
 
     /// Given a key, create a new Lioness cipher
     pub fn new_raw(key: &[u8; 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE]) -> Lioness<H,SC> {
-        let (k1,k2,k3,k4) = array_refs![key,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE];
+        let (_k1,_k2,_k3,_k4) = array_refs![key,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE,STREAM_CIPHER_KEY_SIZE,DIGEST_KEY_SIZE];
         Lioness {
-            _k1: *k1,
-            _k2: *k2,
-            _k3: *k3,
-            _k4: *k4,
+            k1: *_k1,
+            k2: *_k2,
+            k3: *_k3,
+            k4: *_k4,
             h: std::marker::PhantomData,
             sc: std::marker::PhantomData,
         }
