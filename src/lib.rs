@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn chach20_blake2b_lioness_vectors_test() {
-        let test_vectors = vec![
+        let test_vectors = [
             Test {
                 key: "0f2c69732932c99e56fa50fbb2763ad77ee221fc5d9e6c08f89fc577a7467f1ee34003440ee2bfbf\
                       aac60912b0e547fbe9a6a9292db70bc718c6f2773ab198ac8f255378f7ea799e1d4b8596079173b6\
