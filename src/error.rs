@@ -20,6 +20,11 @@ impl fmt::Display for LionessError {
     }
 }
 
+impl From<keystream::Error> for LionessError {
+    fn from(_: keystream::Error) -> LionessError {
+        LionessError::BlockSizeError // EndReached is a block size error
+    }
+}
 
 impl Error for LionessError {
     fn description(&self) -> &str {

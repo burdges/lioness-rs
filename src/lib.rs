@@ -136,7 +136,7 @@ where H: DigestLioness+Input+VariableOutput,
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right);
+        sc.xor_read(right) ?;
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digest_lioness(&self.k2);
@@ -146,7 +146,7 @@ where H: DigestLioness+Input+VariableOutput,
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right);
+        sc.xor_read(right) ?;
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digest_lioness(&self.k4);
@@ -188,7 +188,7 @@ where H: DigestLioness+Input+VariableOutput,
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right);
+        sc.xor_read(right) ?;
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digest_lioness(&self.k2);
@@ -198,7 +198,7 @@ where H: DigestLioness+Input+VariableOutput,
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right);
+        sc.xor_read(right) ?;
 
         Ok(())
     }
