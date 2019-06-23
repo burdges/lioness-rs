@@ -234,9 +234,9 @@ mod tests {
     #[test]
     fn simple_encrypt_decrypt_test() {
         const TEST_PLAINTEXT: &'static [u8] = b"Hello there world, I'm just a test string";
-        let key = thread_rng().gen_iter::<u8>().take(RAW_KEY_SIZE).collect::<Vec<u8>>();
-        let l = Lioness::<VarBlake2b,ChaCha>::new_raw(array_ref!(key,0,RAW_KEY_SIZE));
-        //let l = LionessDefault::new_raw(array_ref!(key,0,RAW_KEY_SIZE));
+        let mut key = [0u8; RAW_KEY_SIZE];
+        thread_rng().fill_bytes(&mut key);
+        let l = Lioness::<VarBlake2b,ChaCha>::new_raw(&key);
         let mut v: Vec<u8> = TEST_PLAINTEXT.to_owned();
         assert_eq!(v,TEST_PLAINTEXT);
         l.encrypt(&mut v).unwrap();
