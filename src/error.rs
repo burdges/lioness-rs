@@ -31,7 +31,7 @@ impl Error for LionessError {
         "I'm a Lioness error."
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         use self::LionessError::*;
         match *self {
             BlockSizeError => None,

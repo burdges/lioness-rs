@@ -17,7 +17,8 @@ extern crate hex;
 
 use keystream::KeyStream;
 use chacha::ChaCha;
-use blake2::{VarBlake2b, digest::{Input, VariableOutput}};
+use blake2::{Blake2bMac, digest::{KeyInit, Update, FixedOutput, consts::U32}};
+use std::convert::TryInto;
 
 pub mod error;
 pub use error::LionessError;
@@ -30,15 +31,22 @@ pub const STREAM_CIPHER_KEY_SIZE: usize = 32;
 pub const RAW_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE;
 const CHACHA20_NONCE_SIZE: usize = 8;
 
+// Type alias for Blake2bMac256 for compatibility with old lioness
+pub type Blake2bMac256 = Blake2bMac<U32>;
+
 /// Adapt a given `crypto::digest::Digest` to Lioness.
-pub trait DigestLioness : Input+VariableOutput {
-    fn new_digest_lioness(k: &[u8]) -> Self;
+pub trait DigestLioness : KeyInit+Update+FixedOutput {
+	
+    fn new_digest_lioness(key: &[u8]) -> Self;
+	
 }
 
-impl DigestLioness for VarBlake2b {
-    fn new_digest_lioness(k: &[u8]) -> Self {
-        VarBlake2b::new_keyed(k,DIGEST_RESULT_SIZE)
+impl DigestLioness for Blake2bMac256 {
+	
+    fn new_digest_lioness(key: &[u8]) -> Self {
+        Blake2bMac256::new_from_slice(&key).unwrap()
     }
+	
 }
 
 
@@ -59,7 +67,7 @@ impl StreamCipherLioness for ChaCha {
 
 /// Lioness implemented generically over a Digest and StreamCipher
 pub struct Lioness<H,SC>
-where H: DigestLioness+Input+VariableOutput, 
+where H: DigestLioness+KeyInit+Update+FixedOutput, 
       SC: StreamCipherLioness+KeyStream {
     k1: [u8; STREAM_CIPHER_KEY_SIZE],
     k2: [u8; DIGEST_KEY_SIZE],
@@ -70,58 +78,12 @@ where H: DigestLioness+Input+VariableOutput,
 }
 
 impl<H,SC> Lioness<H,SC>
-where H: DigestLioness+Input+VariableOutput,
+where H: DigestLioness+KeyInit+Update+FixedOutput,
       SC: StreamCipherLioness+KeyStream
 {
-    /// encrypt a block
-    ///
-    /// # Arguments
-    ///
-    /// * `block` - a mutable byte slice of data to encrypt
-    ///
-    /// # Errors
-    ///
-    /// * `LionessError::BlockSizeError` - returned if block size is too small
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// extern crate blake2;
-    /// extern crate chacha;
-    /// extern crate lioness;
-    /// extern crate hex;
-    /// use self::lioness::{Lioness, RAW_KEY_SIZE};
-    /// use chacha::ChaCha;
-    /// use blake2::VarBlake2b;
-    /// # #[macro_use] extern crate arrayref; fn main() {
-    ///
-    /// let key = hex::decode(
-    ///     "e98e0e3f28311995e8448e6dc1de73159e800c8184a7846418347f4490f063e372\
-    ///      6eebda84e02f2cc218bd6c6e9a9b801e8d8899e8f5b6dcd23bf7ca7f11641c584cd9568f045e9\
-    ///      ad92c59275f67b9bed7f02bb23e28c0b8e56fbb634d60a6d1eae7145e53a4442dda40ae37b2e2\
-    ///      e1f97ae495c8ce0166605d4f1ea91f139159229f208c69362095d8d8e00d7b4c9ca5603dc8b87\
-    ///      50b0eb500670858ca7983a8760be307ff3e5c05f22799cb60d7c57fe3fc8b980aa65e89e3ac0a\
-    ///      c147af7deb").unwrap();
-    ///
-    /// const PLAINTEXT: &'static [u8] = b"Open, secure and reliable
-    /// connectivity is necessary (although not sufficient) to
-    /// excercise the human rights such as freedom of expression and
-    /// freedom of association [FOC], as defined in the Universal
-    /// Declaration of Human Rights [UDHR]. The purpose of the
-    /// Internet to be a global network of networks that provides
-    /// unfettered connectivity to all users and for any content
-    /// [RFC1958]. This objective of stimulating global connectivity
-    /// contributes to the Internet's role as an enabler of human
-    /// rights.";
-    ///
-    /// let mut block: Vec<u8> = PLAINTEXT.to_owned();
-    /// let cipher = Lioness::<VarBlake2b,ChaCha>::new_raw(array_ref!(key, 0, RAW_KEY_SIZE));
-    /// cipher.encrypt(&mut block).unwrap();
-    /// }
-    /// ```
     pub fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
-        // let mut hr = [0u8; DIGEST_RESULT_SIZE];
+        let mut hr : [u8; DIGEST_RESULT_SIZE];
         let mut k = [0u8; STREAM_CIPHER_KEY_SIZE];
         let keylen = std::mem::size_of_val(&k);
         debug_assert!(keylen == 32);
@@ -140,8 +102,9 @@ where H: DigestLioness+Input+VariableOutput,
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digest_lioness(&self.k2);
-        h.input(&mut *right);
-        h.variable_result(|hr| xor_assign(left,&hr));
+        h.update(&mut *right);
+        hr = h.finalize_fixed().as_slice().try_into().expect("slice with incorrect length");
+		xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
@@ -150,25 +113,16 @@ where H: DigestLioness+Input+VariableOutput,
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digest_lioness(&self.k4);
-        h.input(&mut *right);
-        h.variable_result(|hr| xor_assign(left,&hr));
+        h.update(&mut *right);
+        hr = h.finalize_fixed().as_slice().try_into().expect("slice with incorrect length");
+		xor_assign(left,&hr);
 
         Ok(())
     }
 
-    /// decrypt a block
-    ///
-    /// # Arguments
-    ///
-    /// * `block` - a mutable byte slice of data to decrypt
-    ///
-    /// # Errors
-    ///
-    /// * `LionessError::BlockSizeError` - returned if block size is too small
-    ///
     pub fn decrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
-        // let mut hr = [0u8; DIGEST_RESULT_SIZE];
+        let mut hr : [u8; DIGEST_RESULT_SIZE];
         let mut k = [0u8; STREAM_CIPHER_KEY_SIZE];
         let keylen = std::mem::size_of_val(&k);
         debug_assert!(keylen == 32);
@@ -182,8 +136,9 @@ where H: DigestLioness+Input+VariableOutput,
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digest_lioness(&self.k4);
-        h.input(&mut *right);
-        h.variable_result(|hr| xor_assign(left,&hr));
+        h.update(&mut *right);
+        hr = h.finalize_fixed().as_slice().try_into().expect("slice with incorrect length");
+		xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
@@ -192,8 +147,9 @@ where H: DigestLioness+Input+VariableOutput,
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digest_lioness(&self.k2);
-        h.input(&mut *right);
-        h.variable_result(|hr| xor_assign(left,&hr));
+        h.update(&mut *right);
+		hr = h.finalize_fixed().as_slice().try_into().expect("slice with incorrect length");
+		xor_assign(left,&hr);
 
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
@@ -217,7 +173,7 @@ where H: DigestLioness+Input+VariableOutput,
     }
 }
 
-pub type LionessDefault = Lioness<VarBlake2b,ChaCha>;
+pub type LionessDefault = Lioness<Blake2bMac256,ChaCha>;
 
 
 #[cfg(test)]
@@ -236,7 +192,7 @@ mod tests {
         const TEST_PLAINTEXT: &'static [u8] = b"Hello there world, I'm just a test string";
         let mut key = [0u8; RAW_KEY_SIZE];
         thread_rng().fill_bytes(&mut key);
-        let l = Lioness::<VarBlake2b,ChaCha>::new_raw(&key);
+        let l = Lioness::<Blake2bMac256,ChaCha>::new_raw(&key);
         let mut v: Vec<u8> = TEST_PLAINTEXT.to_owned();
         assert_eq!(v,TEST_PLAINTEXT);
         l.encrypt(&mut v).unwrap();
@@ -251,14 +207,14 @@ mod tests {
 
     fn test_cipher(tests: &[Test]) {
         for t in tests {
-            let cipher = Lioness::<VarBlake2b,ChaCha>::new_raw(array_ref!(t.key.as_slice(), 0, RAW_KEY_SIZE));
+            let cipher = Lioness::<Blake2bMac256,ChaCha>::new_raw(array_ref!(t.key.as_slice(), 0, RAW_KEY_SIZE));
             let mut block: Vec<u8> = t.input.as_slice().to_owned();
             cipher.encrypt(&mut block).unwrap();
             let want: Vec<u8> = t.output.as_slice().to_owned();
             assert_eq!(want, block)
         }
     }
-
+	
     #[test]
     fn chach20_blake2b_lioness_vectors_test() {
         let key = hex::decode(
