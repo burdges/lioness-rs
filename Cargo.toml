@@ -9,6 +9,7 @@ documentation = "https://docs.rs/lioness/"
 readme = "README.md"
 keywords = ["cryptography","cipher","lioness", "sphinx", "mixnet"]
 license = "MIT/Apache-2.0"
+edition = "2021"
 
 [dependencies]
 arrayref = "0.3.6"

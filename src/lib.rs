@@ -21,7 +21,7 @@ use chacha::ChaCha;
 use blake2::Blake2bMac;
 use blake3::Hasher;
 use digest::{KeyInit, Update, FixedOutput, consts::U32};
-use std::{io::Read, convert::TryInto};
+use std::io::Read;
 
 pub mod error;
 pub use error::LionessError;
