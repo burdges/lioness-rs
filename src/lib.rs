@@ -35,12 +35,12 @@ pub const BLAKE3_KEY_SIZE: usize = 32;
 pub const STREAM_CIPHER_KEY_SIZE: usize = 32;
 pub const RAW_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE;
 pub const RAW_BLAKE3_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*BLAKE3_KEY_SIZE;
+
 const CHACHA20_NONCE_SIZE: usize = 8;
 
-// Type alias for Blake2bMac256 for compatibility with old lioness
-pub type Blake2bMac256 = Blake2bMac<U32>;
-pub type Blake3Hasher = Hasher;
-pub type ChaChaLioness = ChaCha;
+type Blake2bMac256 = Blake2bMac<U32>;
+type Blake3Hasher = Hasher;
+type ChaChaLioness = ChaCha;
 
 /// Adapt a given `crypto::digest::Digest` to Lioness.
 pub trait DigestLioness : KeyInit+Update+FixedOutput {
@@ -304,6 +304,7 @@ where
 }
 
 pub type LionessDefault = Lioness<Blake2bMac256,ChaChaLioness>;
+pub type LionessBlake3Default = LionessBlake3<Blake3Hasher,ChaChaLioness>;
 
 #[cfg(test)]
 mod tests {
@@ -322,7 +323,7 @@ mod tests {
         const TEST_PLAINTEXT: &'static [u8] = b"Hello there world, I'm just a test string";
         let mut key = [0u8; RAW_KEY_SIZE];
         thread_rng().fill_bytes(&mut key);
-        let l = Lioness::<Blake2bMac256,ChaChaLioness>::new_raw(&key);
+        let l = LionessDefault::new_raw(&key);
         let mut v: Vec<u8> = TEST_PLAINTEXT.to_owned();
         assert_eq!(v,TEST_PLAINTEXT);
         l.encrypt(&mut v).unwrap();
@@ -340,7 +341,7 @@ mod tests {
         const TEST_PLAINTEXT: &'static [u8] = b"Hello there world, I'm just a test string";
         let mut key = [0u8; RAW_BLAKE3_KEY_SIZE];
         thread_rng().fill_bytes(&mut key);
-        let l = LionessBlake3::<Blake3Hasher,ChaChaLioness>::new_raw(&key);
+        let l = LionessBlake3Default::new_raw(&key);
         let mut v: Vec<u8> = TEST_PLAINTEXT.to_owned();
         assert_eq!(v,TEST_PLAINTEXT);
         l.encrypt(&mut v).unwrap();
@@ -355,7 +356,7 @@ mod tests {
 
     fn test_cipher(tests: &[Test]) {
         for t in tests {
-            let cipher = Lioness::<Blake2bMac256,ChaChaLioness>::new_raw(array_ref!(t.key.as_slice(), 0, RAW_KEY_SIZE));
+            let cipher = LionessDefault::new_raw(array_ref!(t.key.as_slice(), 0, RAW_KEY_SIZE));
             let mut block: Vec<u8> = t.input.as_slice().to_owned();
             cipher.encrypt(&mut block).unwrap();
             let want: Vec<u8> = t.output.as_slice().to_owned();
@@ -408,7 +409,7 @@ mod tests {
 	#[test]
     fn encryption_is_reciprocal_to_decryption_for_chacha20_blake3_variant() {
         let key = GenericArray::from(b"my-awesome-key-that-is-perfect-length-to-work-with-chacha20-and-blake3-lioness-cipher-after-adding-a-little-bit-of-extra-padding".to_owned()).as_slice().try_into().expect("slice with incorrect length");
-		let l = LionessBlake3::<Blake3Hasher,ChaChaLioness>::new_raw(&key);
+		let l = LionessBlake3Default::new_raw(&key);
         let data = b"Hello there! This is some test data that has length at least as long as the digest size of Blake3.";
         let mut block = *data;
 		l.encrypt(&mut block).unwrap();
@@ -420,7 +421,7 @@ mod tests {
 	#[test]
     fn encryption_is_reciprocal_to_decryption_for_block_chacha20_blake3_variant() {
         let key = GenericArray::from(b"my-awesome-key-that-is-perfect-length-to-work-with-chacha20-and-blake3-lioness-cipher-after-adding-a-little-bit-of-extra-padding".to_owned()).as_slice().try_into().expect("slice with incorrect length");
-		let l = LionessBlake3::<Blake3Hasher,ChaChaLioness>::new_raw(&key);
+		let l = LionessBlake3Default::new_raw(&key);
         let data = b"This is some test data of the same length as specified blockSize".to_owned();
         let mut block = GenericArray::from(data);
 		l.encrypt(&mut block).unwrap();
