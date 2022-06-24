@@ -13,8 +13,7 @@ edition = "2021"
 
 [dependencies]
 arrayref = "0.3.6"
-keystream = "1.0.0"
-chacha = "0.3.0"
+chacha20 = "0.9.0"
 blake2 = "0.10.4"
 digest = "0.10.3"
 blake3 = "1.3.1"

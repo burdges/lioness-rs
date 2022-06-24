@@ -4,10 +4,9 @@
 #[macro_use]
 extern crate arrayref;
 
-extern crate chacha;
+extern crate chacha20;
 extern crate blake2;
 extern crate digest;
-extern crate keystream;
 extern crate blake3;
 
 #[cfg(test)]
@@ -15,9 +14,7 @@ extern crate rand;
 #[cfg(test)]
 extern crate hex;
 
-
-use keystream::KeyStream;
-use chacha::ChaCha;
+use chacha20::{ChaCha20, cipher::{KeyIvInit, StreamCipher}};
 use blake2::Blake2bMac;
 use blake3::Hasher;
 use digest::{KeyInit, Update, FixedOutput, consts::U32};
@@ -36,11 +33,9 @@ pub const STREAM_CIPHER_KEY_SIZE: usize = 32;
 pub const RAW_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*DIGEST_KEY_SIZE;
 pub const RAW_BLAKE3_KEY_SIZE: usize = 2*STREAM_CIPHER_KEY_SIZE + 2*BLAKE3_KEY_SIZE;
 
-const CHACHA20_NONCE_SIZE: usize = 8;
-
 type Blake2bMac256 = Blake2bMac<U32>;
 type Blake3Hasher = Hasher;
-type ChaChaLioness = ChaCha;
+type ChaChaLioness = ChaCha20;
 
 /// Adapt a given `crypto::digest::Digest` to Lioness.
 pub trait DigestLioness : KeyInit+Update+FixedOutput {
@@ -71,7 +66,7 @@ impl Blake3 for Blake3Hasher {
 	
 }
 
-pub trait StreamCipherLioness : KeyStream {
+pub trait StreamCipherLioness : KeyIvInit+StreamCipher {
 	
     fn new_streamcipher_lioness(k: &[u8; STREAM_CIPHER_KEY_SIZE]) -> Self;
 	
@@ -80,7 +75,7 @@ pub trait StreamCipherLioness : KeyStream {
 impl StreamCipherLioness for ChaChaLioness {
 	
     fn new_streamcipher_lioness(k: &[u8; STREAM_CIPHER_KEY_SIZE]) -> ChaChaLioness {
-        ChaChaLioness::new_chacha20(k, &[0u8;CHACHA20_NONCE_SIZE])
+		ChaChaLioness::new(k.into(), &Default::default())
     }
 	
 }
@@ -88,7 +83,7 @@ impl StreamCipherLioness for ChaChaLioness {
 pub struct Lioness<H,SC>
 where 
 	H: DigestLioness+KeyInit+Update+FixedOutput, 
-    SC: StreamCipherLioness+KeyStream {
+    SC: StreamCipherLioness+KeyIvInit+StreamCipher {
 		k1: [u8; STREAM_CIPHER_KEY_SIZE],
 		k2: [u8; DIGEST_KEY_SIZE],
 		k3: [u8; STREAM_CIPHER_KEY_SIZE],
@@ -100,7 +95,7 @@ where
 pub struct LionessBlake3<H,SC>
 where
 	H: Blake3,
-	SC: StreamCipherLioness+KeyStream {
+	SC: StreamCipherLioness+KeyIvInit+StreamCipher {
 		k1: [u8; STREAM_CIPHER_KEY_SIZE],
 		k2: [u8; BLAKE3_KEY_SIZE],
 		k3: [u8; STREAM_CIPHER_KEY_SIZE],
@@ -112,7 +107,7 @@ where
 impl<H,SC> Lioness<H,SC>
 where 
 	H: DigestLioness+KeyInit+Update+FixedOutput,
-    SC: StreamCipherLioness+KeyStream
+    SC: StreamCipherLioness+KeyIvInit+StreamCipher
 {
     pub fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(DIGEST_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
@@ -131,7 +126,7 @@ where
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digest_lioness(&self.k2);
@@ -142,7 +137,7 @@ where
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         // L = L ^ H(K4, R)
         let mut h = H::new_digest_lioness(&self.k4);
@@ -176,7 +171,7 @@ where
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         // L = L ^ H(K2, R)
         let mut h = H::new_digest_lioness(&self.k2);
@@ -187,7 +182,7 @@ where
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         Ok(())
     }
@@ -209,7 +204,7 @@ where
 impl<H,SC> LionessBlake3<H,SC>
 where
 	H: Blake3,
-	SC: StreamCipherLioness+KeyStream
+	SC: StreamCipherLioness+KeyIvInit+StreamCipher
 {
     pub fn encrypt(&self, block: &mut [u8]) -> Result<(), LionessError> {
         debug_assert!(BLAKE3_RESULT_SIZE == STREAM_CIPHER_KEY_SIZE);
@@ -228,7 +223,7 @@ where
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         // L = L ^ H(K2, R)
         let mut h = H::new_blake3(&self.k2);
@@ -239,7 +234,7 @@ where
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         // L = L ^ H(K4, R)
         let mut h = H::new_blake3(&self.k4);
@@ -273,7 +268,7 @@ where
         // R = R ^ S(L ^ K3)
         xor(left, &self.k3, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         // L = L ^ H(K2, R)
         let mut h = H::new_blake3(&self.k2);
@@ -284,7 +279,7 @@ where
         // R = R ^ S(L ^ K1)
         xor(left, &self.k1, &mut k);
         let mut sc = SC::new_streamcipher_lioness(&k);
-        sc.xor_read(right) ?;
+        sc.apply_keystream(right);
 
         Ok(())
     }

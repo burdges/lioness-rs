@@ -20,8 +20,8 @@ impl fmt::Display for LionessError {
     }
 }
 
-impl From<keystream::Error> for LionessError {
-    fn from(_: keystream::Error) -> LionessError {
+impl From<chacha20::cipher::StreamCipherError> for LionessError {
+    fn from(_: chacha20::cipher::StreamCipherError) -> LionessError {
         LionessError::BlockSizeError // EndReached is a block size error
     }
 }
