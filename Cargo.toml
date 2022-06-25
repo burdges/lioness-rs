@@ -1,10 +1,10 @@
 [package]
-name = "lioness"
-version = "0.1.2"
-authors = ["Jeffrey Burdges <burdges@gnunet.org>", "David Stainton <dstainton415@gmail.com>"]
-description = "Lioness wide block cipher"
-homepage = "https://github.com/burdges/lioness-rs"
-repository = "https://github.com/burdges/lioness-rs.git"
+name = "lioness-vnpmid"
+version = "0.1.0"
+authors = ["vnpmid <dhani.prg.2007@gmail.com>"]
+description = "Fork from https://github.com/burdges/lioness-rs because no update since 3 years ago"
+homepage = "https://github.com/vnpmid/lioness-rs"
+repository = "https://github.com/vnpmid/lioness-rs.git"
 documentation = "https://docs.rs/lioness/"
 readme = "README.md"
 keywords = ["cryptography","cipher","lioness", "sphinx", "mixnet"]

@@ -33,7 +33,7 @@ This crate works with Cargo and is on
 
 ```toml
 [dependencies]
-lioness = "^0.1"
+lioness-vnpmid = "0.1.0"
 ```
 
 Use the crate like:
